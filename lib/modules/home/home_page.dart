@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+
+import 'package:payflow/modules/extract/extract_page.dart';
 import 'package:payflow/modules/home/home_controller.dart';
+import 'package:payflow/modules/meus_boletos/meus_boletos_page.dart';
+import 'package:payflow/shared/models/user_model.dart';
 import 'package:payflow/shared/themes/app_colors.dart';
 import 'package:payflow/shared/themes/app_text_styles.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final UserModel user;
+  const HomePage({
+    Key? key,
+    required this.user,
+  }) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -12,17 +20,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final controller = HomeController();
-  final pages = [
-    Container(color: Colors.red),
-    Container(color: Colors.blue),
-  ];
-  Color getColorButtonNav(int index) {
-    if (index == controller.currentPage) {
-      return AppColors.primary;
-    } else {
-      return AppColors.body;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,35 +30,61 @@ class _HomePageState extends State<HomePage> {
           height: 152,
           color: AppColors.primary,
           child: Center(
-            child: ListTile(
-              title: Text.rich(
-                TextSpan(
-                  text: "Olá, ",
-                  style: AppTextStyles.titleRegular,
-                  children: [
-                    TextSpan(
-                        text: "Gabriel",
-                        style: AppTextStyles.titleBoldBackground)
-                  ],
-                ),
-              ),
-              subtitle: Text(
-                "Mantenha suas contas em dia",
-                style: AppTextStyles.captionShape,
-              ),
-              trailing: Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(5),
-                ),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await Future.delayed(
+                    Duration(seconds: 2),
+                    () => {
+                          setState(() {
+                            controller.setPage(0);
+                          })
+                        });
+              },
+              child: ListView(
+                children: [
+                  ListTile(
+                    title: Text.rich(
+                      TextSpan(
+                        text: "Olá, ",
+                        style: AppTextStyles.titleRegular,
+                        children: [
+                          TextSpan(
+                              text: "${widget.user.name}",
+                              style: AppTextStyles.titleBoldBackground)
+                        ],
+                      ),
+                    ),
+                    subtitle: Text(
+                      "Mantenha suas contas em dia",
+                      style: AppTextStyles.captionShape,
+                    ),
+                    trailing: Container(
+                      height: 48,
+                      width: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(5),
+                        image: DecorationImage(
+                            image: NetworkImage(
+                          widget.user.photoURL!,
+                        )),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
           ),
         ),
       ),
-      body: pages[controller.currentPage],
+      body: [
+        MeusBoletosPage(
+          key: UniqueKey(),
+        ),
+        ExtractPage(
+          key: UniqueKey(),
+        ),
+      ][controller.currentPage],
       bottomNavigationBar: Container(
         height: 90,
         child: Row(
@@ -74,12 +97,22 @@ class _HomePageState extends State<HomePage> {
                 });
               },
               icon: Icon(Icons.home),
-              color: getColorButtonNav(0),
+              color: controller.currentPage == 0
+                  ? AppColors.primary
+                  : AppColors.body,
             ),
             GestureDetector(
-              onTap: () {
-                print("Clicou");
+              onTap: () async {
+                await Navigator.pushNamed(context, "/barcode_scanner");
+                // await Navigator.pushNamed(context, "/insert_boleto");
+                setState(() {
+                  print("chegou no set state");
+                  controller.setPage(0);
+                  print("passou do set state");
+                });
+                print("fim");
               },
+              behavior: HitTestBehavior.translucent,
               child: Container(
                 width: 56,
                 height: 56,
@@ -87,9 +120,8 @@ class _HomePageState extends State<HomePage> {
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(5),
                 ),
-                child: IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.add_box_outlined),
+                child: Icon(
+                  Icons.add_box_outlined,
                   color: AppColors.background,
                 ),
               ),
@@ -101,7 +133,9 @@ class _HomePageState extends State<HomePage> {
                 });
               },
               icon: Icon(Icons.description_outlined),
-              color: getColorButtonNav(1),
+              color: controller.currentPage == 1
+                  ? AppColors.primary
+                  : AppColors.body,
             )
           ],
         ),
